@@ -7,10 +7,11 @@ import select
 import termios
 import tty
 
-from player import Player
-from enemy import Enemy
-from key import Key
-from level import Level
+import Player
+import Level
+import Enemy
+import Key
+
 
 def init():
     """
@@ -37,17 +38,17 @@ def init():
     }
     
     # Charger les niveaux
-    level1 = level.create("niveau-01.txt", 0)
+    level1 = Level.create("niveau-02.txt", 0)
     data['levels'].append(level1)
     
     # Créer le joueur
-    data['player'] = player.create(5, 5)
+    data['player'] = Player.create(5, 5)
     
     # Créer un ennemi
-    data['enemy'] = enemy.create(15, 10)
+    data['enemy'] = Enemy.create(15, 10)
     
     # Créer une clé
-    data['key'] = key.create(20, 20)
+    data['key'] = Key.create(20, 20)
     
     # Configuration du terminal pour la détection des touches sans appuyer sur Entrée
     data['old_settings'] = termios.tcgetattr(sys.stdin)
@@ -71,13 +72,13 @@ def interact(data):
     """
     if is_data():
         c = sys.stdin.read(1)
-        if c == 'q':  # Quitter le jeu
+        if c == 'a':  # Quitter le jeu
             quit_game(data)
-        elif c == 'a':  # Déplacer à gauche
+        elif c == 'q':  # Déplacer à gauche
             Player.move_left(data['player'])
         elif c == 'd':  # Déplacer à droite
             Player.move_right(data['player'])
-        elif c == 'w':  # Changer la gravité (sauter)
+        elif c == 'z':  # Changer la gravité (sauter)
             Player.gravity_change(data['player'])
         elif c == 'e':  # Essayer de ramasser la clé
             Player.pick_key(data)

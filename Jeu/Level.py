@@ -32,31 +32,33 @@ def create(filename, offset):
             "#                        S         #\n",
             "####################################\n"
         ]
-    
+
     # Nettoyer les lignes
     lines = [line.rstrip('\n') for line in lines]
-    
+
     level = {
         'grille': lines,
         'width': max(len(line) for line in lines),
         'height': len(lines),
         'offset': offset
     }
-    
+
     return level
+
 
 def check_exit(l, player, data):
     """
     Vérifie si le joueur atteint la sortie
     """
-    x, y = player['x'], player['y']
-    
+    x, y = int(player['x']), int(player['y'])
+
     # S'assurer que les coordonnées sont valides
     if y < 0 or y >= len(l['grille']) or x < 0 or x >= len(l['grille'][y]):
         return False
-    
+
     # Vérifier si la position contient la sortie (et si le joueur a la clé)
     return l['grille'][y][x] == 'S' and data['has_key']
+
 
 def change(data, next_level):
     """
@@ -66,17 +68,18 @@ def change(data, next_level):
         data['level'] += 1
         data['has_key'] = False
         data['score'] += 500
-        
+
         # Réinitialiser la position du joueur
-        from player import set_pos
+        from Player import set_pos
         set_pos(data['player'], 5, 5)
+
 
 def show(l):
     """
     Affiche le niveau
     """
     for y, line in enumerate(l['grille']):
-        sys.stdout.write(f"\033[{y+1};1H")
+        sys.stdout.write(f"\033[{y + 1};1H")
         for x, char in enumerate(line):
             if char == '#':
                 sys.stdout.write("\033[47m \033[0m")  # Bloc blanc

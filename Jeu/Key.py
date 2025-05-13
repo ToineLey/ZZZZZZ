@@ -34,4 +34,7 @@ def show(k):
     """
     Affiche la clé
     """
-    sys.stdout.write(f"\033[{k['y']+1};{k['x']+1}H{k['color']}K\033[0m")
+    # Convertir en entiers pour l'affichage
+    x = int(k['x'])
+    y = int(k['y'])
+    sys.stdout.write(f"\033[{y+1};{x+1}H{k['color']}K\033[0m")

@@ -6,7 +6,6 @@ import sys
 
 class Player: pass
 
-
 def create(x, y):
     """
     Crée un joueur
@@ -70,13 +69,14 @@ def pick_key(data):
     """
     Permet de ramasser la clé
     """
-    from key import Key
+    import Key
 
     p = data['player']
     k = data['key']
 
-    px, py = get_pos(p)
-    kx, ky = Key.get_pos(k)
+    # Convertir en entiers pour la comparaison
+    px, py = int(p['x']), int(p['y'])
+    kx, ky = int(k['x']), int(k['y'])
 
     # Si le joueur est à proximité de la clé
     if abs(px - kx) <= 1 and abs(py - ky) <= 1 and not data['has_key']:
@@ -95,7 +95,7 @@ def collide(p, data):
     """
     Gère les collisions avec le niveau
     """
-    from level import Level
+    import Level
 
     level = data['levels'][data['level'] - 1]
 
@@ -131,10 +131,14 @@ def test_collision(x, y, level):
     """
     Teste s'il y a une collision à la position donnée
     """
-    if x < 0 or y < 0 or y >= len(level['grille']) or x >= len(level['grille'][0]):
+    # Convertir en entiers pour indexation
+    x_int = int(x)
+    y_int = int(y)
+
+    if x_int < 0 or y_int < 0 or y_int >= len(level['grille']) or x_int >= len(level['grille'][0]):
         return True
 
-    cell = level['grille'][y][x]
+    cell = level['grille'][y_int][x_int]
     return cell == '#' or cell == '='
 
 
@@ -163,4 +167,7 @@ def show(p):
     """
     Affiche le joueur
     """
-    sys.stdout.write(f"\033[{p['y'] + 1};{p['x'] + 1}H{p['color']}@\033[0m")
+    # Convertir en entiers pour l'affichage
+    x = int(p['x'])
+    y = int(p['y'])
+    sys.stdout.write(f"\033[{y + 1};{x + 1}H{p['color']}@\033[0m")
