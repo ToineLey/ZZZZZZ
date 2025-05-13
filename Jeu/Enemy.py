@@ -16,7 +16,7 @@ def create(x, y):
         'type': 1,  # 1: ennemi de base
         'state': 0,  # 0: état normal
         'direction': 1,  # 1: droite, -1: gauche
-        'speed': 0.5,
+        'speed': 0.1,
         'movement_counter': 0
     }
     return enemy

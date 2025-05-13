@@ -18,11 +18,11 @@ def init():
     Initialisation du jeu
     """
     data = {
-        'timeStep': 0.1,  # Pas de temps de simulation
+        'timeStep': 0.01,  # Pas de temps de simulation
         'show_period': 0.2,  # Période d'affichage
         'show_time': 0,  # Temps écoulé depuis le dernier affichage
         'x_min': 0,
-        'x_max': 79,
+        'x_max': 37,
         'y_min': 0,
         'y_max': 24,
         'score': 0,
