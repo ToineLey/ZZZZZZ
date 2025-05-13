@@ -18,20 +18,20 @@ def create(filename, offset):
         # Si le fichier n'existe pas, créer un niveau par défaut
         lines = [
             "####################################\n",
-            "#                                  #\n",
-            "#                                  #\n",
-            "#    @                K            #\n",
-            "#################     ##############\n",
-            "#                                  #\n",
-            "#                                  #\n",
-            "#                                  #\n",
-            "#                   E              #\n",
-            "########    #######################\n",
+            "#                    K             #\n",
             "#                                  #\n",
             "#                                  #\n",
             "#                                  #\n",
             "#                                  #\n",
-            "#                        S         #\n",
+            "#                                  #\n",
+            "#                                  #\n",
+            "#                                  #\n",
+            "#                                  #\n",
+            "#                                  #\n",
+            "#                                  #\n",
+            "#                                  #\n",
+            "#                                  #\n",
+            "#     @                         S  #\n",
             "####################################\n"
         ]
 
@@ -70,14 +70,50 @@ def change(data, next_level):
     """
     Change de niveau si le joueur atteint la sortie
     """
+    import Enemy
+    import Player
+    import Key
+
     if next_level:
         data['level'] += 1
         data['has_key'] = False
         data['score'] += 500
 
-        # Réinitialiser la position du joueur
-        from Player import set_pos
-        set_pos(data['player'], 5, 5)
+        current_level = data['levels'][data['level'] - 1]
+        player_pos = None
+        key_pos = None
+        enemy_positions = []
+
+        if data['enemies']!=[]:
+            data['enemies'].clear()
+
+        for y, line in enumerate(current_level['grille']):
+            for x, char in enumerate(line):
+                if char == '@':
+                    player_pos = (x, y)
+                elif char == 'K':
+                    key_pos = (x, y)
+                elif char == 'E':
+                    enemy_positions.append((x, y))
+
+        # Créer le joueur à la position extraite du niveau
+        if player_pos:
+            data['player'] = Player.create(player_pos[0], player_pos[1])
+        else:
+            data['player'] = Player.create(5, 5)  # Position par défaut
+
+        # Créer la clé à la position extraite du niveau
+        if key_pos:
+            data['key'] = Key.create(key_pos[0], key_pos[1])
+        else:
+            data['key'] = Key.create(20, 20)  # Position par défaut
+
+        # Créer les ennemis aux positions extraites du niveau
+        if enemy_positions:
+            for pos in enemy_positions:
+                data['enemies'].append(Enemy.create(pos[0], pos[1]))
+        else:
+            pass
 
 
 def show(l):

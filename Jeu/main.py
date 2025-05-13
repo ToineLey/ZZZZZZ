@@ -13,6 +13,7 @@ import Enemy
 import Key
 
 
+
 def init():
     """
     Initialisation du jeu
@@ -38,10 +39,15 @@ def init():
     }
 
     # Charger les niveaux
+    level0 = Level.create("niveau-00.txt", 0)
     level1 = Level.create("niveau-01.txt", 0)
     level2 = Level.create("niveau-02.txt", 0)
+    level3 = Level.create("niveau-03.txt", 0)
+
+    data['levels'].append(level0)
     data['levels'].append(level1)
     data['levels'].append(level2)
+    data['levels'].append(level3)
 
     # Extraire les positions initiales des éléments du niveau actuel
     current_level = data['levels'][data['level'] - 1]
@@ -75,8 +81,7 @@ def init():
         for pos in enemy_positions:
             data['enemies'].append(Enemy.create(pos[0], pos[1]))
     else:
-        # Ajouter un ennemi par défaut si aucun n'est trouvé
-        data['enemies'].append(Enemy.create(15, 10))
+        pass
 
     # Configuration du terminal pour la détection des touches sans appuyer sur Entrée
     data['old_settings'] = termios.tcgetattr(sys.stdin)
@@ -175,6 +180,8 @@ def game_over(data):
     Termine la partie si le joueur meurt
     """
     data['lives'] -= 1
+    data['score'] -= 1000
+
     if data['lives'] <= 0:
         sys.stdout.write("\033[H\033[2J")
         sys.stdout.write("\033[10;30HGAME OVER\033[11;25HAppuyez sur une touche pour quitter...")
