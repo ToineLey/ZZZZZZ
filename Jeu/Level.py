@@ -3,7 +3,9 @@
 
 import sys
 
+
 class Level: pass
+
 
 def create(filename, offset):
     """
@@ -36,9 +38,13 @@ def create(filename, offset):
     # Nettoyer les lignes
     lines = [line.rstrip('\n') for line in lines]
 
+    # Assurons-nous que toutes les lignes ont la même longueur
+    max_length = max(len(line) for line in lines)
+    lines = [line.ljust(max_length) for line in lines]
+
     level = {
         'grille': lines,
-        'width': max(len(line) for line in lines),
+        'width': max_length,
         'height': len(lines),
         'offset': offset
     }
@@ -87,5 +93,14 @@ def show(l):
                 sys.stdout.write("\033[36mS\033[0m")  # Sortie en cyan
             elif char == '=':
                 sys.stdout.write("\033[37m=\033[0m")  # Plateforme en gris
+            elif char == 'E':
+                # Ne pas afficher les ennemis ici, ils sont gérés par Enemy.show()
+                sys.stdout.write(" ")
+            elif char == '@':
+                # Ne pas afficher le joueur ici, il est géré par Player.show()
+                sys.stdout.write(" ")
+            elif char == 'K':
+                # Ne pas afficher la clé ici, elle est gérée par Key.show()
+                sys.stdout.write(" ")
             else:
                 sys.stdout.write(" ")  # Espace vide

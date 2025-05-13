@@ -6,6 +6,7 @@ import sys
 
 class Player: pass
 
+
 def create(x, y):
     """
     Crée un joueur
@@ -57,12 +58,15 @@ def move_right(p):
 
 def gravity_change(p):
     """
-    Effectue un saut ou un changement de gravité
+    Effectue un changement de gravité
     """
-    if p['on_ground'] and p['jump_cooldown'] <= 0:
-        p['velocity_y'] = p['jump_power'] * p['gravity']
-        p['on_ground'] = False
-        p['jump_cooldown'] = 10  # Éviter les sauts multiples trop rapides
+    # Inverser la gravité
+    p['gravity'] *= -1
+
+    # Ajuster la vitesse pour un petit effet de poussée dans la nouvelle direction
+    p['velocity_y'] = p['jump_power'] * p['gravity'] * 0.5
+    p['on_ground'] = False
+    p['jump_cooldown'] = 5  # Éviter les changements multiples trop rapides
 
 
 def pick_key(data):
@@ -99,8 +103,8 @@ def collide(p, data):
 
     level = data['levels'][data['level'] - 1]
 
-    # Vérifier la collision avec le sol/plafond
-    test_y = p['y'] + 1 if p['gravity'] > 0 else p['y'] - 1
+    # Vérifier la collision dans la direction de la gravité
+    test_y = p['y'] + p['gravity']
 
     if test_collision(p['x'], test_y, level):
         p['on_ground'] = True
@@ -108,12 +112,19 @@ def collide(p, data):
     else:
         p['on_ground'] = False
 
-    # Vérifier les collisions horizontales
+    # Vérifier les collisions verticales (en fonction de la gravité)
     if p['velocity_y'] != 0:  # Si en mouvement vertical
         next_y = p['y'] + p['velocity_y']
         if not test_collision(p['x'], next_y, level):
             p['y'] = next_y
         else:
+            # Trouver la position valide la plus proche
+            if p['velocity_y'] > 0:
+                while test_collision(p['x'], p['y'] + 0.1, level) == False and abs(p['y'] - next_y) > 0.1:
+                    p['y'] += 0.1
+            else:
+                while test_collision(p['x'], p['y'] - 0.1, level) == False and abs(p['y'] - next_y) > 0.1:
+                    p['y'] -= 0.1
             p['velocity_y'] = 0
 
     # Vérifier les bords de l'écran
@@ -135,7 +146,7 @@ def test_collision(x, y, level):
     x_int = int(x)
     y_int = int(y)
 
-    if x_int < 0 or y_int < 0 or y_int >= len(level['grille']) or x_int >= len(level['grille'][0]):
+    if x_int < 0 or y_int < 0 or y_int >= len(level['grille']) or x_int >= len(level['grille'][y_int]):
         return True
 
     cell = level['grille'][y_int][x_int]
@@ -170,4 +181,8 @@ def show(p):
     # Convertir en entiers pour l'affichage
     x = int(p['x'])
     y = int(p['y'])
-    sys.stdout.write(f"\033[{y + 1};{x + 1}H{p['color']}@\033[0m")
+
+    # Caractère différent selon la direction de la gravité
+    char = '?' if p['gravity'] > 0 else '¿'
+
+    sys.stdout.write(f"\033[{y + 1};{x + 1}H{p['color']}{char}\033[0m")

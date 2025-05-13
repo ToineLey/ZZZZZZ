@@ -30,41 +30,71 @@ def init():
         'lives': 3,
         'levels': [],
         'player': None,
-        'enemy': None,
+        'enemies': [],  # Liste d'ennemis
         'key': None,
         'running': True,
         'has_key': False,
         'old_settings': None
     }
-    
+
     # Charger les niveaux
-    level1 = Level.create("niveau-02.txt", 0)
+    level1 = Level.create("niveau-01.txt", 0)
+    level2 = Level.create("niveau-02.txt", 0)
     data['levels'].append(level1)
-    
-    # Créer le joueur
-    data['player'] = Player.create(5, 5)
-    
-    # Créer un ennemi
-    data['enemy'] = Enemy.create(15, 10)
-    
-    # Créer une clé
-    data['key'] = Key.create(20, 20)
-    
+    data['levels'].append(level2)
+
+    # Extraire les positions initiales des éléments du niveau actuel
+    current_level = data['levels'][data['level'] - 1]
+    player_pos = None
+    key_pos = None
+    enemy_positions = []
+
+    for y, line in enumerate(current_level['grille']):
+        for x, char in enumerate(line):
+            if char == '@':
+                player_pos = (x, y)
+            elif char == 'K':
+                key_pos = (x, y)
+            elif char == 'E':
+                enemy_positions.append((x, y))
+
+    # Créer le joueur à la position extraite du niveau
+    if player_pos:
+        data['player'] = Player.create(player_pos[0], player_pos[1])
+    else:
+        data['player'] = Player.create(5, 5)  # Position par défaut
+
+    # Créer la clé à la position extraite du niveau
+    if key_pos:
+        data['key'] = Key.create(key_pos[0], key_pos[1])
+    else:
+        data['key'] = Key.create(20, 20)  # Position par défaut
+
+    # Créer les ennemis aux positions extraites du niveau
+    if enemy_positions:
+        for pos in enemy_positions:
+            data['enemies'].append(Enemy.create(pos[0], pos[1]))
+    else:
+        # Ajouter un ennemi par défaut si aucun n'est trouvé
+        data['enemies'].append(Enemy.create(15, 10))
+
     # Configuration du terminal pour la détection des touches sans appuyer sur Entrée
     data['old_settings'] = termios.tcgetattr(sys.stdin)
     tty.setraw(sys.stdin.fileno())
-    
+
     # Effacer l'écran et cacher le curseur
     sys.stdout.write("\033[2J\033[?25l")
     sys.stdout.flush()
-    
+
     return data
+
 
 def is_data():
     """
     Indique s'il y a des événements en attente
     """
     return select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], [])
+
 
 def interact(data):
     """
@@ -78,10 +108,11 @@ def interact(data):
             Player.move_left(data['player'])
         elif c == 'd':  # Déplacer à droite
             Player.move_right(data['player'])
-        elif c == 'z':  # Changer la gravité (sauter)
+        elif c == 'z' or c == ' ':  # Changer la gravité
             Player.gravity_change(data['player'])
         elif c == 'e':  # Essayer de ramasser la clé
             Player.pick_key(data)
+
 
 def live(data):
     """
@@ -89,20 +120,24 @@ def live(data):
     """
     # Mise à jour du joueur
     Player.live(data['player'], data)
-    
+
     # Mise à jour des ennemis
-    Enemy.live(data['enemy'], data)
-    
+    for enemy in data['enemies']:
+        Enemy.live(enemy, data)
+
     # Vérifier si le joueur a atteint la sortie
-    if Level.check_exit(data['levels'][data['level']-1], data['player'], data):
+    if Level.check_exit(data['levels'][data['level'] - 1], data['player'], data):
         if data['level'] < len(data['levels']):
             Level.change(data, True)
         else:
             win(data)
-    
+
     # Vérifier les collisions entre le joueur et les ennemis
-    if Enemy.test_player(data['enemy'], data['player']):
-        game_over(data)
+    for enemy in data['enemies']:
+        if Enemy.test_player(enemy, data['player']):
+            game_over(data)
+            break
+
 
 def show(data):
     """
@@ -110,24 +145,30 @@ def show(data):
     """
     # Effacer l'écran
     sys.stdout.write("\033[H")
-    
+
     # Afficher le niveau
-    Level.show(data['levels'][data['level']-1])
-    
-    # Afficher le joueur
-    Player.show(data['player'])
-    
-    # Afficher l'ennemi
-    Enemy.show(data['enemy'])
-    
+    Level.show(data['levels'][data['level'] - 1])
+
     # Afficher la clé si elle n'a pas été ramassée
     if not data['has_key']:
         Key.show(data['key'])
-    
+
+    # Afficher les ennemis
+    for enemy in data['enemies']:
+        Enemy.show(enemy)
+
+    # Afficher le joueur (en dernier pour qu'il soit au-dessus)
+    Player.show(data['player'])
+
     # Afficher les informations du jeu
-    sys.stdout.write(f"\033[{data['y_max']}H\033[KVies: {data['lives']} | Niveau: {data['level']} | Score: {data['score']} | Clé: {'Oui' if data['has_key'] else 'Non'}")
-    
+    sys.stdout.write(f"\033[{data['y_max']}H\033[K")
+    sys.stdout.write(
+        f"\033[{data['y_max']}H\033[KVies: {data['lives']} | Niveau: {data['level']} | Score: {data['score']} | ")
+    sys.stdout.write(
+        f"Clé: {'Oui' if data['has_key'] else 'Non'} | [q/d]: Déplacer | [z]: Gravité | [e]: Prendre clé | [a]: Quitter")
+
     sys.stdout.flush()
+
 
 def game_over(data):
     """
@@ -142,17 +183,38 @@ def game_over(data):
         quit_game(data)
     else:
         # Réinitialiser la position du joueur
-        Player.set_pos(data['player'], 5, 5)
+        current_level = data['levels'][data['level'] - 1]
+        player_pos = None
+
+        for y, line in enumerate(current_level['grille']):
+            for x, char in enumerate(line):
+                if char == '@':
+                    player_pos = (x, y)
+                    break
+            if player_pos:
+                break
+
+        if player_pos:
+            Player.set_pos(data['player'], player_pos[0], player_pos[1])
+        else:
+            Player.set_pos(data['player'], 5, 5)
+
+        # Réinitialiser la gravité
+        data['player']['gravity'] = 1
+        data['player']['velocity_y'] = 0
+
 
 def win(data):
     """
     Termine la partie si le joueur gagne
     """
     sys.stdout.write("\033[H\033[2J")
-    sys.stdout.write("\033[10;30HVICTOIRE!\033[11;25HAppuyez sur une touche pour quitter...")
+    sys.stdout.write("\033[10;30HVICTOIRE!\033[11;25HVotre score final: " + str(data['score']))
+    sys.stdout.write("\033[12;25HAppuyez sur une touche pour quitter...")
     sys.stdout.flush()
     sys.stdin.read(1)
     quit_game(data)
+
 
 def quit_game(data):
     """
@@ -160,40 +222,42 @@ def quit_game(data):
     """
     # Restaurer les paramètres du terminal
     termios.tcsetattr(sys.stdin, termios.TCSADRAIN, data['old_settings'])
-    
+
     # Afficher le curseur
     sys.stdout.write("\033[?25h")
     sys.stdout.write("\033[H\033[2J")
     sys.stdout.flush()
-    
+
     data['running'] = False
     sys.exit(0)
+
 
 def run(data):
     """
     Boucle de simulation
     """
     last_time = time.time()
-    
+
     while data['running']:
         current_time = time.time()
         elapsed = current_time - last_time
         last_time = current_time
-        
+
         # Gérer les entrées utilisateur
         interact(data)
-        
+
         # Mettre à jour la simulation
         live(data)
-        
+
         # Mettre à jour l'affichage si nécessaire
         data['show_time'] += elapsed
         if data['show_time'] >= data['show_period']:
             show(data)
             data['show_time'] = 0
-        
+
         # Pause pour éviter de surcharger le CPU
         time.sleep(0.01)
+
 
 def main():
     """
@@ -201,17 +265,20 @@ def main():
     """
     # Écran de démarrage
     sys.stdout.write("\033[H\033[2J")
-    sys.stdout.write("\033[10;30HZZZZZZ\033[11;25HAppuyez sur Entrée pour commencer...")
+    sys.stdout.write("\033[10;30HZZZZZZ\033[11;25HJeu de plateforme avec gravité inversée")
+    sys.stdout.write("\033[13;25H[q/d]: Déplacer | [z]: Gravité | [e]: Prendre clé | [a]: Quitter")
+    sys.stdout.write("\033[15;25HAppuyez sur Entrée pour commencer...")
     sys.stdout.flush()
-    
+
     # Attendre que l'utilisateur appuie sur Entrée
     sys.stdin.read(1)
-    
+
     # Initialiser le jeu
     data = init()
-    
+
     # Lancer la boucle de simulation
     run(data)
+
 
 if __name__ == "__main__":
     main()

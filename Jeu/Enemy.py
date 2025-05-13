@@ -57,14 +57,22 @@ def move(e, data):
         y_int = int(e['y'])
 
         # Vérifier s'il y a une collision ou un vide en dessous
-        if (new_x < 0 or new_x >= len(level['grille'][0]) or
-                level['grille'][y_int][new_x] == '#' or
-                (y_int + 1 < len(level['grille']) and level['grille'][y_int + 1][new_x] == ' ')):
+        if (new_x < 0 or new_x >= level['width'] or y_int >= level['height'] or
+            (y_int < level['height'] and y_int >= 0 and new_x < len(level['grille'][y_int]) and
+             level['grille'][y_int][new_x] == '#')):
             # Changer de direction
             e['direction'] *= -1
         else:
-            # Déplacer l'ennemi
-            e['x'] = new_x
+            # Vérifier s'il y a un sol sous l'ennemi
+            if (y_int + 1 >= level['height'] or
+                (y_int + 1 < level['height'] and new_x < len(level['grille'][y_int + 1]) and
+                 level['grille'][y_int + 1][new_x] != '#' and
+                 level['grille'][y_int + 1][new_x] != '=')):
+                # Pas de sol, changer de direction
+                e['direction'] *= -1
+            else:
+                # Déplacer l'ennemi
+                e['x'] = new_x
 
 
 def test_player(e, player):
