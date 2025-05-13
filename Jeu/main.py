@@ -12,7 +12,7 @@ import Level
 import Enemy
 import Key
 
-
+''
 
 def init():
     """
