@@ -127,6 +127,20 @@ def collide(p, data):
                     p['y'] -= 0.1
             p['velocity_y'] = 0
 
+    # Vérifier les collisions horizontales APRÈS le mouvement à gauche/droite
+    # Cette partie a été ajoutée pour gérer les collisions avec les murs
+    if p.get('_last_x', None) is not None:
+        # Calculer la direction du mouvement
+        dx = p['x'] - p['_last_x']
+        
+        if dx != 0:  # Si un mouvement horizontal a eu lieu
+            if test_collision(p['x'], p['y'], level):
+                # En cas de collision, revenir à l'ancienne position
+                p['x'] = p['_last_x']
+    
+    # Mémoriser la position actuelle pour le prochain cycle
+    p['_last_x'] = p['x']
+
     # Vérifier les bords de l'écran
     if p['x'] < 0:
         p['x'] = 0
@@ -136,7 +150,6 @@ def collide(p, data):
         p['y'] = 0
     if p['y'] > data['y_max'] - 1:
         p['y'] = data['y_max'] - 1
-
 
 def test_collision(x, y, level):
     """
