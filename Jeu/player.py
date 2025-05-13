@@ -1,0 +1,166 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import sys
+
+
+class Player: pass
+
+
+def create(x, y):
+    """
+    Crée un joueur
+    """
+    player = {
+        'x': x,
+        'y': y,
+        'color': "\033[32m",  # Couleur verte
+        'speed': 1,
+        'velocity_y': 0,
+        'gravity': 1,  # 1 pour gravité vers le bas, -1 pour gravité vers le haut
+        'on_ground': False,
+        'jump_power': -3,
+        'jump_cooldown': 0
+    }
+    return player
+
+
+def set_pos(p, x, y):
+    """
+    Définit la position du joueur
+    """
+    p['x'] = x
+    p['y'] = y
+
+
+def get_pos(p):
+    """
+    Récupère la position du joueur
+    """
+    return (p['x'], p['y'])
+
+
+def move_left(p):
+    """
+    Déplace le joueur à gauche
+    """
+    p['x'] -= p['speed']
+    if p['x'] < 0:
+        p['x'] = 0
+
+
+def move_right(p):
+    """
+    Déplace le joueur à droite
+    """
+    p['x'] += p['speed']
+
+
+def gravity_change(p):
+    """
+    Effectue un saut ou un changement de gravité
+    """
+    if p['on_ground'] and p['jump_cooldown'] <= 0:
+        p['velocity_y'] = p['jump_power'] * p['gravity']
+        p['on_ground'] = False
+        p['jump_cooldown'] = 10  # Éviter les sauts multiples trop rapides
+
+
+def pick_key(data):
+    """
+    Permet de ramasser la clé
+    """
+    from key import Key
+
+    p = data['player']
+    k = data['key']
+
+    px, py = get_pos(p)
+    kx, ky = Key.get_pos(k)
+
+    # Si le joueur est à proximité de la clé
+    if abs(px - kx) <= 1 and abs(py - ky) <= 1 and not data['has_key']:
+        data['has_key'] = True
+        data['score'] += 100
+
+
+def set_speed(p, v):
+    """
+    Définit la vitesse du joueur
+    """
+    p['speed'] = v
+
+
+def collide(p, data):
+    """
+    Gère les collisions avec le niveau
+    """
+    from level import Level
+
+    level = data['levels'][data['level'] - 1]
+
+    # Vérifier la collision avec le sol/plafond
+    test_y = p['y'] + 1 if p['gravity'] > 0 else p['y'] - 1
+
+    if test_collision(p['x'], test_y, level):
+        p['on_ground'] = True
+        p['velocity_y'] = 0
+    else:
+        p['on_ground'] = False
+
+    # Vérifier les collisions horizontales
+    if p['velocity_y'] != 0:  # Si en mouvement vertical
+        next_y = p['y'] + p['velocity_y']
+        if not test_collision(p['x'], next_y, level):
+            p['y'] = next_y
+        else:
+            p['velocity_y'] = 0
+
+    # Vérifier les bords de l'écran
+    if p['x'] < 0:
+        p['x'] = 0
+    if p['x'] > data['x_max']:
+        p['x'] = data['x_max']
+    if p['y'] < 0:
+        p['y'] = 0
+    if p['y'] > data['y_max'] - 1:
+        p['y'] = data['y_max'] - 1
+
+
+def test_collision(x, y, level):
+    """
+    Teste s'il y a une collision à la position donnée
+    """
+    if x < 0 or y < 0 or y >= len(level['grille']) or x >= len(level['grille'][0]):
+        return True
+
+    cell = level['grille'][y][x]
+    return cell == '#' or cell == '='
+
+
+def live(p, data):
+    """
+    Met à jour l'état du joueur
+    """
+    # Appliquer la gravité
+    if not p['on_ground']:
+        p['velocity_y'] += 0.5 * p['gravity']
+
+    # Limiter la vitesse de chute
+    max_fall_speed = 2
+    if abs(p['velocity_y']) > max_fall_speed:
+        p['velocity_y'] = max_fall_speed * (1 if p['velocity_y'] > 0 else -1)
+
+    # Décrémenter le compteur de saut
+    if p['jump_cooldown'] > 0:
+        p['jump_cooldown'] -= 1
+
+    # Gérer les collisions
+    collide(p, data)
+
+
+def show(p):
+    """
+    Affiche le joueur
+    """
+    sys.stdout.write(f"\033[{p['y'] + 1};{p['x'] + 1}H{p['color']}@\033[0m")
