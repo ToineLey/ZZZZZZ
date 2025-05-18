@@ -6,6 +6,7 @@ import time
 import select
 import termios
 import tty
+import os
 
 import Player
 import Level
@@ -13,6 +14,57 @@ import Enemy
 import Key
 
 ''
+
+
+def load_screen(filename, default_content, center_x=30, center_y=10):
+    """
+    Charge un écran à partir d'un fichier texte
+    Si le fichier n'existe pas, utilise le contenu par défaut
+    """
+    try:
+        with open(filename, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        # Supprimer les sauts de ligne finaux
+        lines = [line.rstrip('\n') for line in lines]
+        return lines
+    except FileNotFoundError:
+        return default_content
+
+
+def display_screen(data, lines, center_y=10, wait_for_key=True, additional_text=None):
+    """
+    Affiche un écran avec le texte centré
+    """
+    # Effacer l'écran
+    sys.stdout.write("\033[H\033[2J")
+
+    # Afficher le contenu ligne par ligne
+    for i, line in enumerate(lines):
+        y_pos = center_y + i
+        # Centrer le texte
+        x_pos = max(1, (data['x_max'] - len(line)) // 2 + 1)
+        sys.stdout.write(f"\033[{y_pos};{x_pos}H{line}")
+
+    # Afficher le texte supplémentaire si fourni
+    if additional_text:
+        for i, line in enumerate(additional_text):
+            y_pos = center_y + len(lines) + 2 + i
+            x_pos = max(1, (data['x_max'] - len(line)) // 2 + 1)
+            sys.stdout.write(f"\033[{y_pos};{x_pos}H{line}")
+
+    # Afficher l'invite pour continuer
+    if wait_for_key:
+        prompt = "Appuyez sur une touche pour continuer..."
+        y_pos = center_y + len(lines) + (4 if additional_text else 2)
+        x_pos = max(1, (data['x_max'] - len(prompt)) // 2 + 1)
+        sys.stdout.write(f"\033[{y_pos};{x_pos}H{prompt}")
+
+    sys.stdout.flush()
+
+    # Attendre une touche si demandé
+    if wait_for_key:
+        sys.stdin.read(1)
+
 
 def init():
     """
@@ -183,10 +235,20 @@ def game_over(data):
     data['score'] -= 1000
 
     if data['lives'] <= 0:
-        sys.stdout.write("\033[H\033[2J")
-        sys.stdout.write("\033[10;30HGAME OVER\033[11;25HAppuyez sur une touche pour quitter...")
-        sys.stdout.flush()
-        sys.stdin.read(1)
+        # Charger l'écran de fin de partie depuis un fichier
+        default_game_over = [
+            "GAME OVER",
+            "Vous avez perdu toutes vos vies!",
+            f"Score final: {data['score']}"
+        ]
+
+        game_over_screen = load_screen("fin.txt", default_game_over)
+
+        # Ajouter le score si nécessaire (si pas déjà dans le fichier)
+        additional_text = [f"Score final: {data['score']}"] if not any(
+            "Score" in line for line in game_over_screen) else None
+
+        display_screen(data, game_over_screen, additional_text=additional_text)
         quit_game(data)
     else:
         # Réinitialiser la position du joueur
@@ -215,11 +277,18 @@ def win(data):
     """
     Termine la partie si le joueur gagne
     """
-    sys.stdout.write("\033[H\033[2J")
-    sys.stdout.write("\033[10;30HVICTOIRE!\033[11;25HVotre score final: " + str(data['score']))
-    sys.stdout.write("\033[12;25HAppuyez sur une touche pour quitter...")
-    sys.stdout.flush()
-    sys.stdin.read(1)
+    # Charger l'écran de victoire depuis un fichier
+    default_victory = [
+        "VICTOIRE!",
+        "Félicitations, vous avez terminé tous les niveaux!"
+    ]
+
+    victory_screen = load_screen("Victoire.txt", default_victory)
+
+    # Ajouter le score si nécessaire (si pas déjà dans le fichier)
+    additional_text = [f"Score final: {data['score']}"] if not any("Score" in line for line in victory_screen) else None
+
+    display_screen(data, victory_screen, additional_text=additional_text)
     quit_game(data)
 
 
@@ -270,15 +339,21 @@ def main():
     """
     Fonction principale du jeu
     """
-    # Écran de démarrage
-    sys.stdout.write("\033[H\033[2J")
-    sys.stdout.write("\033[10;30HZZZZZZ\033[11;25HJeu de plateforme avec gravité inversée")
-    sys.stdout.write("\033[13;25H[q/d]: Déplacer | [z]: Gravité | [e]: Prendre clé | [a]: Quitter")
-    sys.stdout.write("\033[15;25HAppuyez sur Entrée pour commencer...")
-    sys.stdout.flush()
+    # Définir l'écran titre par défaut au cas où le fichier n'existe pas
+    default_title = [
+        "ZZZZZZ",
+        "Jeu de plateforme avec gravité inversée",
+        "",
+        "[q/d]: Déplacer | [z]: Gravité | [e]: Prendre clé | [a]: Quitter"
+    ]
 
-    # Attendre que l'utilisateur appuie sur Entrée
-    sys.stdin.read(1)
+    # Créer un dictionnaire pour init(), même si on n'a pas encore appelé init()
+    # Juste pour passer à la fonction display_screen
+    temp_data = {'x_max': 37, 'y_max': 24}
+
+    # Charger et afficher l'écran titre
+    title_screen = load_screen("ZZZZZZ.txt", default_title)
+    display_screen(temp_data, title_screen)
 
     # Initialiser le jeu
     data = init()
