@@ -17,4 +17,4 @@ ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
 
 Jeu de plateforme avec gravité inversée
 
-[q/d]: Déplacer | [z]: Gravité | [e]: Prendre clé | [a]: Quitter
+[q/d]: Déplacer | [z]: Gravité | [e]: Prendre clé | [a]: Quitte
