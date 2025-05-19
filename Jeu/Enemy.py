@@ -94,11 +94,12 @@ def move(e, data):
 def test_player(e, player):
     """
     Détecte si l'ennemi touche le joueur
-    (Ne détecte que si l'ennemi est actif selon la gravité)
+    Les ennemis en état 0 (actifs) sont toujours meurtriers
+    Les ennemis en état 1 (inactifs) ne détectent pas de collision
     """
-    # Vérifier si l'ennemi est actif selon son type et la gravité du joueur
-    if (e['type'] == 1 and player['gravity'] < 0) or (e['type'] == 2 and player['gravity'] > 0):
-        return False  # Ennemi inactif, pas de collision avec le joueur
+    # Si l'ennemi est inactif (état 1), pas de collision
+    if e['state'] == 1:
+        return False
 
     # Convertir en entiers pour la comparaison
     px, py = int(player['x']), int(player['y'])

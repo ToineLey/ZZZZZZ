@@ -6,6 +6,7 @@ import time
 import select
 import termios
 import tty
+import threading
 
 import Player
 import Level
@@ -21,7 +22,7 @@ def init():
     """
     data = {
         'timeStep': 0.01,  # Pas de temps de simulation
-        'show_period': 0.2,  # Période d'affichage
+        'show_period': 0.05,  # Période d'affichage plus rapide
         'show_time': 0,  # Temps écoulé depuis le dernier affichage
         'x_min': 0,
         'x_max': 37,
@@ -36,7 +37,8 @@ def init():
         'key': None,
         'running': True,
         'has_key': False,
-        'old_settings': None
+        'old_settings': None,
+        'display_lock': threading.Lock()  # Verrou pour synchroniser l'affichage
     }
 
     # Charger les niveaux
@@ -118,12 +120,24 @@ def interact(data):
             quit_game(data)
         elif c == 'q':  # Déplacer à gauche
             Player.move_left(data['player'])
+            # Afficher immédiatement après le déplacement
+            with data['display_lock']:
+                show(data)
         elif c == 'd':  # Déplacer à droite
             Player.move_right(data['player'])
+            # Afficher immédiatement après le déplacement
+            with data['display_lock']:
+                show(data)
         elif c == 'z' or c == ' ':  # Changer la gravité
             Player.gravity_change(data['player'])
+            # Afficher immédiatement après le changement de gravité
+            with data['display_lock']:
+                show(data)
         elif c == 'e':  # Essayer de ramasser la clé
             Player.pick_key(data)
+            # Afficher immédiatement après la tentative de ramassage
+            with data['display_lock']:
+                show(data)
 
 
 def live(data):
@@ -246,9 +260,9 @@ def quit_game(data):
     sys.exit(0)
 
 
-def run(data):
+def display_thread(data):
     """
-    Boucle de simulation
+    Thread dédié à l'affichage
     """
     last_time = time.time()
 
@@ -257,17 +271,33 @@ def run(data):
         elapsed = current_time - last_time
         last_time = current_time
 
+        # Mettre à jour l'affichage périodiquement
+        data['show_time'] += elapsed
+        if data['show_time'] >= data['show_period']:
+            with data['display_lock']:
+                show(data)
+            data['show_time'] = 0
+
+        # Pause pour éviter de surcharger le CPU
+        time.sleep(0.01)
+
+
+def run(data):
+    """
+    Boucle de simulation avec threading
+    """
+    # Créer et démarrer le thread d'affichage
+    display = threading.Thread(target=display_thread, args=(data,))
+    display.daemon = True
+    display.start()
+
+    # Boucle principale du jeu
+    while data['running']:
         # Gérer les entrées utilisateur
         interact(data)
 
         # Mettre à jour la simulation
         live(data)
-
-        # Mettre à jour l'affichage si nécessaire
-        data['show_time'] += elapsed
-        if data['show_time'] >= data['show_period']:
-            show(data)
-            data['show_time'] = 0
 
         # Pause pour éviter de surcharger le CPU
         time.sleep(0.01)
