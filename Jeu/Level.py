@@ -83,8 +83,9 @@ def change(data, next_level):
         player_pos = None
         key_pos = None
         enemy_positions = []
+        inverted_enemy_positions = []  # Pour les ennemis de type 2 (gravité inversée)
 
-        if data['enemies']!=[]:
+        if data['enemies'] != []:
             data['enemies'].clear()
 
         for y, line in enumerate(current_level['grille']):
@@ -95,6 +96,8 @@ def change(data, next_level):
                     key_pos = (x, y)
                 elif char == 'E':
                     enemy_positions.append((x, y))
+                elif char == 'F':  # Nouvel ennemi de type 2 (gravité inversée)
+                    inverted_enemy_positions.append((x, y))
 
         # Créer le joueur à la position extraite du niveau
         if player_pos:
@@ -111,9 +114,12 @@ def change(data, next_level):
         # Créer les ennemis aux positions extraites du niveau
         if enemy_positions:
             for pos in enemy_positions:
-                data['enemies'].append(Enemy.create(pos[0], pos[1]))
-        else:
-            pass
+                data['enemies'].append(Enemy.create(pos[0], pos[1], 1))  # Type 1: ennemi standard
+
+        # Créer les ennemis de type 2 (gravité inversée)
+        if inverted_enemy_positions:
+            for pos in inverted_enemy_positions:
+                data['enemies'].append(Enemy.create(pos[0], pos[1], 2))  # Type 2: ennemi gravité inversée
 
 
 def show(l):
@@ -129,7 +135,7 @@ def show(l):
                 sys.stdout.write("\033[36mS\033[0m")  # Sortie en cyan
             elif char == '=':
                 sys.stdout.write("\033[37m=\033[0m")  # Plateforme en gris
-            elif char == 'E':
+            elif char == 'E' or char == 'F':
                 # Ne pas afficher les ennemis ici, ils sont gérés par Enemy.show()
                 sys.stdout.write(" ")
             elif char == '@':
