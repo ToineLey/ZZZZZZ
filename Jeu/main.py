@@ -204,6 +204,7 @@ def game_over(data):
     data['score'] -= 1000
 
     if data['lives'] <= 0:
+        data['running'] = False
         sys.stdout.write("\033[H\033[2J")
         sys.stdout.write("\033[10;30HGAME OVER\033[11;25HAppuyez sur une touche pour quitter...")
         sys.stdout.flush()
@@ -236,6 +237,7 @@ def win(data):
     """
     Termine la partie si le joueur gagne
     """
+    data['running'] = False
     sys.stdout.write("\033[H\033[2J")
     sys.stdout.write("\033[10;30HVICTOIRE!\033[11;25HVotre score final: " + str(data['score']))
     sys.stdout.write("\033[12;25HAppuyez sur une touche pour quitter...")
@@ -313,7 +315,7 @@ def main():
     sys.stdout.write("\033[13;25H[q/d]: Déplacer | [z]: Gravité | [e]: Prendre clé | [a]: Quitter")
     sys.stdout.write("\033[14;25H[E]: Ennemi rouge (actif en gravité normale)")
     sys.stdout.write("\033[15;25H[F]: Ennemi jaune (actif en gravité inversée)")
-    sys.stdout.write("\033[17;25HAppuyez sur Entrée pour commencer...")
+    sys.stdout.write("\033[17;25HAppuyez sur une touche pour commencer...")
     sys.stdout.flush()
 
     # Attendre que l'utilisateur appuie sur Entrée

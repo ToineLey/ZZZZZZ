@@ -97,9 +97,6 @@ def test_player(e, player):
     Les ennemis en état 0 (actifs) sont toujours meurtriers
     Les ennemis en état 1 (inactifs) ne détectent pas de collision
     """
-    # Si l'ennemi est inactif (état 1), pas de collision
-    if e['state'] == 1:
-        return False
 
     # Convertir en entiers pour la comparaison
     px, py = int(player['x']), int(player['y'])
