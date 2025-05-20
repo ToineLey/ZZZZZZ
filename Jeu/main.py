@@ -30,7 +30,7 @@ def init():
         'y_max': 24,
         'score': 0,
         'level': 1,
-        'lives': 3,
+        'lives': 5,
         'levels': [],
         'player': None,
         'enemies': [],  # Liste d'ennemis
@@ -46,11 +46,13 @@ def init():
     level1 = Level.create("niveau-01.txt", 0)
     level2 = Level.create("niveau-02.txt", 0)
     level3 = Level.create("niveau-03.txt", 0)
+    level4 = Level.create("niveau-04.txt", 0)
 
     data['levels'].append(level0)
     data['levels'].append(level1)
     data['levels'].append(level2)
     data['levels'].append(level3)
+    data['levels'].append(level4)
 
     # Extraire les positions initiales des éléments du niveau actuel
     current_level = data['levels'][data['level'] - 1]
@@ -315,7 +317,7 @@ def main():
     sys.stdout.write("\033[13;25H[q/d]: Déplacer | [z]: Gravité | [e]: Prendre clé | [a]: Quitter")
     sys.stdout.write("\033[14;25H[E]: Ennemi rouge (actif en gravité normale)")
     sys.stdout.write("\033[15;25H[F]: Ennemi jaune (actif en gravité inversée)")
-    sys.stdout.write("\033[17;25HAppuyez sur une touche pour commencer...")
+    sys.stdout.write("\033[17;25HAppuyez sur [Entrée] pour commencer...")
     sys.stdout.flush()
 
     # Attendre que l'utilisateur appuie sur Entrée
