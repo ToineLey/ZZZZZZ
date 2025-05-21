@@ -7,6 +7,7 @@ import select
 import termios
 import tty
 import threading
+import os
 
 import Player
 import Level
@@ -118,7 +119,9 @@ def interact(data):
     """
     if is_data():
         c = sys.stdin.read(1)
-        if c == 'a':  # Quitter le jeu
+        if c == '\x1b':  # Touche Échap
+            quit_game(data)
+        elif c == 'a':  # Quitter le jeu (alternative)
             quit_game(data)
         elif c == 'q':  # Déplacer à gauche
             Player.move_left(data['player'])
@@ -138,6 +141,33 @@ def interact(data):
         elif c == 'e':  # Essayer de ramasser la clé
             Player.pick_key(data)
             # Afficher immédiatement après la tentative de ramassage
+            with data['display_lock']:
+                show(data)
+        elif c == 'r':  # Redémarrer le niveau actuel
+            # Réinitialiser la position du joueur
+            current_level = data['levels'][data['level'] - 1]
+            player_pos = None
+
+            for y, line in enumerate(current_level['grille']):
+                for x, char in enumerate(line):
+                    if char == '@':
+                        player_pos = (x, y)
+                        break
+                if player_pos:
+                    break
+
+            if player_pos:
+                Player.set_pos(data['player'], player_pos[0], player_pos[1])
+            else:
+                Player.set_pos(data['player'], 5, 5)
+
+            # Réinitialiser la gravité et la vitesse
+            data['player']['gravity'] = 1
+            data['player']['velocity_y'] = 0
+
+            # Réinitialiser la clé
+            data['has_key'] = False
+
             with data['display_lock']:
                 show(data)
 
@@ -160,10 +190,9 @@ def live(data):
         else:
             win(data)
 
-
     # Vérifier si le joueur a atteint la sortie secrete
     if Level.check_secret_exit(data['levels'][data['level'] - 1], data['player'], data):
-        data['score']+=10000
+        data['score'] += 10000
         Level.change_to_secret(data, data['level'])
 
     # Vérifier les collisions entre le joueur et les ennemis
@@ -200,7 +229,7 @@ def show(data):
     sys.stdout.write(
         f"\033[{data['y_max']}H\033[KVies: {data['lives']} | Niveau: {data['level']} | Score: {data['score']} | ")
     sys.stdout.write(
-        f"Clé: {'Oui' if data['has_key'] else 'Non'} | [q/d]: Déplacer | [z]: Gravité | [e]: Prendre clé | [a]: Quitter")
+        f"Clé: {'Oui' if data['has_key'] else 'Non'} | [q/d]: Déplacer | [z]: Gravité | [e]: Prendre clé | [r]: Restart | [Echap]: Quitter")
 
     sys.stdout.flush()
 
@@ -214,19 +243,48 @@ def game_over(data):
 
     if data['lives'] <= 0:
         data['running'] = False
+        # Nettoyer l'écran
         sys.stdout.write("\033[H\033[2J")
-        # Afficher le contenu du fichier fin.txt
-        try:
-            with open("fin.txt", 'r') as f:
-                end_text = f.read()
-                sys.stdout.write("\033[5;1H" + end_text)
-        except FileNotFoundError:
-            sys.stdout.write("\033[10;30HGAME OVER")
-        sys.stdout.write("\033[25;25HAppuyez sur une touche pour quitter...")
+        sys.stdout.flush()
+
+        # Déterminer le chemin du fichier fin.txt
+        # Essayer plusieurs chemins possibles
+        file_paths = ["./fin.txt", "fin.txt", os.path.join(os.path.dirname(__file__), "fin.txt")]
+        end_text = None
+
+        for path in file_paths:
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    end_text = f.read()
+                    break
+            except (FileNotFoundError, IOError):
+                continue
+
+        # Afficher le texte de fin
+        if end_text:
+            # Afficher ligne par ligne pour éviter les problèmes d'affichage
+            lines = end_text.split('\n')
+            for i, line in enumerate(lines):
+                sys.stdout.write(f"\033[{i + 5};1H{line}")
+        else:
+            # Fallback si le fichier n'est pas trouvé
+            sys.stdout.write("\033[10;30H\033[31mGAME OVER\033[0m")
+
+        sys.stdout.write("\033[25;25H[r]: Recommencer | [Echap]: Quitter")
         sys.stdout.write("\033[26;25HVotre score final: " + str(data['score']))
         sys.stdout.flush()
-        sys.stdin.read(1)
-        quit_game(data)
+
+        # Attendre une touche
+        while True:
+            key = sys.stdin.read(1)
+            if key == 'r':  # Recommencer le jeu
+                # Restaurer les paramètres du terminal
+                termios.tcsetattr(sys.stdin, termios.TCSADRAIN, data['old_settings'])
+                # Réinitialiser et relancer le jeu
+                python = sys.executable
+                os.execl(python, python, *sys.argv)
+            elif key == '\x1b':  # Touche Échap
+                quit_game(data)
     else:
         # Réinitialiser la position du joueur
         current_level = data['levels'][data['level'] - 1]
@@ -255,21 +313,48 @@ def win(data):
     Termine la partie si le joueur gagne
     """
     data['running'] = False
+    # Nettoyer l'écran
     sys.stdout.write("\033[H\033[2J")
-
-    # Afficher le contenu du fichier Victoire.txt
-    try:
-        with open("Victoire.txt", 'r') as f:
-            victory_text = f.read()
-            sys.stdout.write("\033[5;1H" + victory_text)
-    except FileNotFoundError:
-        sys.stdout.write("\033[10;30HVICTOIRE!")
-
-    sys.stdout.write("\033[25;25HAppuyez sur une touche pour quitter...")
-    sys.stdout.write("\033[26;25HVotre score final: " + str(data['score']))
     sys.stdout.flush()
-    sys.stdin.read(1)
-    quit_game(data)
+
+    # Déterminer le chemin du fichier Victoire.txt
+    # Essayer plusieurs chemins possibles
+    file_paths = ["./Victoire.txt", "Victoire.txt", os.path.join(os.path.dirname(__file__), "Victoire.txt")]
+    victory_text = None
+
+    for path in file_paths:
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                victory_text = f.read()
+                break
+        except (FileNotFoundError, IOError):
+            continue
+
+    # Afficher le texte de victoire
+    if victory_text:
+        # Afficher ligne par ligne pour éviter les problèmes d'affichage
+        lines = victory_text.split('\n')
+        for i, line in enumerate(lines):
+            sys.stdout.write(f"\033[{i + 5};1H{line}")
+    else:
+        # Fallback si le fichier n'est pas trouvé
+        sys.stdout.write("\033[10;30H\033[32mVICTOIRE!\033[0m")
+
+    sys.stdout.write("\033[28;25H[r]: Recommencer | [Echap]: Quitter")
+    sys.stdout.write("\033[29;25HVotre score final: " + str(data['score']))
+    sys.stdout.flush()
+
+    # Attendre une touche
+    while True:
+        key = sys.stdin.read(1)
+        if key == 'r':  # Recommencer le jeu
+            # Restaurer les paramètres du terminal
+            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, data['old_settings'])
+            # Réinitialiser et relancer le jeu
+            python = sys.executable
+            os.execl(python, python, *sys.argv)
+        elif key == '\x1b':  # Touche Échap
+            quit_game(data)
 
 
 def quit_game(data):
@@ -338,25 +423,53 @@ def main():
     # Écran de démarrage
     sys.stdout.write("\033[H\033[2J")
 
-    # Afficher le contenu de ZZZZZZ.txt comme écran d'accueil
-    try:
-        with open("ZZZZZZ.txt", 'r') as f:
-            intro_text = f.read()
-            sys.stdout.write("\033[2;1H" + intro_text)
-    except FileNotFoundError:
-        sys.stdout.write("\033[10;30HZZZZZZ")
+    # Déterminer le chemin du fichier ZZZZZZ.txt
+    # Essayer plusieurs chemins possibles
+    file_paths = ["./ZZZZZZ.txt", "ZZZZZZ.txt", os.path.join(os.path.dirname(__file__), "ZZZZZZ.txt")]
+    intro_text = None
 
+    for path in file_paths:
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                intro_text = f.read()
+                break
+        except (FileNotFoundError, IOError):
+            continue
+
+    # Afficher le texte d'intro
+    if intro_text:
+        # Afficher ligne par ligne pour éviter les problèmes d'affichage
+        lines = intro_text.split('\n')
+        for i, line in enumerate(lines):
+            sys.stdout.write(f"\033[{i + 2};1H{line}")
+    else:
+        # Fallback si le fichier n'est pas trouvé
+        sys.stdout.write("\033[10;30HZZZZZZ")
 
     sys.stdout.write("\033[20;25H[S]: Sortie | [?/¿]: Joueur | [K]: clé")
     sys.stdout.write("\033[22;25H[E]: Ennemi rouge (actif en gravité normale)")
     sys.stdout.write("\033[24;25H[F]: Ennemi jaune (actif en gravité inversée)")
-    sys.stdout.write("\033[29;25HAppuyez sur Entrée pour commencer...")
+    sys.stdout.write("\033[29;25HAppuyez sur Entrée pour commencer ou [Echap] pour quitter...")
     sys.stdout.flush()
 
-    # Attendre que l'utilisateur appuie sur Entrée
-    sys.stdin.read(1)
+    # Configuration du terminal pour la détection des touches sans appuyer sur Entrée
+    old_settings = termios.tcgetattr(sys.stdin)
+    tty.setraw(sys.stdin.fileno())
 
-    # Initialiser le jeu
+    # Attendre que l'utilisateur appuie sur Entrée ou Échap
+    while True:
+        key = sys.stdin.read(1)
+        if key == '\r':  # Entrée
+            break
+        elif key == '\x1b':  # Échap
+            # Restaurer les paramètres du terminal
+            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+            sys.stdout.write("\033[?25h")  # Afficher le curseur
+            sys.stdout.write("\033[H\033[2J")  # Effacer l'écran
+            sys.stdout.flush()
+            sys.exit(0)
+
+    # Initialiser le jeu (cela réinitialise les paramètres du terminal)
     data = init()
 
     # Lancer la boucle de simulation
