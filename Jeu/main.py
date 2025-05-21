@@ -49,6 +49,11 @@ def init():
     level3 = Level.create("niveau-03.txt", 0)
     level4 = Level.create("niveau-04.txt", 0)
     level5 = Level.create("niveau-05.txt", 0)
+    level6 = Level.create("niveau-06.txt", 0)
+    level7 = Level.create("niveau-07.txt", 0)
+    level8 = Level.create("niveau-08.txt", 0)
+    level9 = Level.create("niveau-09.txt", 0)
+    level10 = Level.create("niveau-10.txt", 0)
 
     data['levels'].append(level0)
     data['levels'].append(level1)
@@ -56,6 +61,11 @@ def init():
     data['levels'].append(level3)
     data['levels'].append(level4)
     data['levels'].append(level5)
+    data['levels'].append(level6)
+    data['levels'].append(level7)
+    data['levels'].append(level8)
+    data['levels'].append(level9)
+    data['levels'].append(level10)
 
     # Extraire les positions initiales des éléments du niveau actuel
     current_level = data['levels'][data['level'] - 1]
@@ -273,7 +283,7 @@ def game_over(data):
             # Afficher ligne par ligne pour éviter les problèmes d'affichage
             lines = end_text.split('\n')
             for i, line in enumerate(lines):
-                sys.stdout.write(f"\033[{i + 5};1H{line}")
+                sys.stdout.write("\033[1;31m" + f"\033[{i + 5};1H{line}" + "\033[0;0m")
         else:
             # Fallback si le fichier n'est pas trouvé
             sys.stdout.write("\033[10;30H\033[31mGAME OVER\033[0m")
@@ -343,10 +353,10 @@ def win(data):
         # Afficher ligne par ligne pour éviter les problèmes d'affichage
         lines = victory_text.split('\n')
         for i, line in enumerate(lines):
-            sys.stdout.write(f"\033[{i + 5};1H{line}")
+            sys.stdout.write("\033[1;32m" + f"\033[{i + 5};1H{line}" + "\033[0;0m")
     else:
         # Fallback si le fichier n'est pas trouvé
-        sys.stdout.write("\033[10;30H\033[32mVICTOIRE!\033[0m")
+        sys.stdout.write("\033[1;32m" + "\033[10;30H\033[32mVICTOIRE!\033[0m" + "\033[0;0m")
 
     sys.stdout.write("\033[28;25H[r]: Recommencer | [Echap]: Quitter")
     sys.stdout.write("\033[29;25HVotre score final: " + str(data['score']))
@@ -449,7 +459,7 @@ def main():
         # Afficher ligne par ligne pour éviter les problèmes d'affichage
         lines = intro_text.split('\n')
         for i, line in enumerate(lines):
-            sys.stdout.write(f"\033[{i + 2};1H{line}")
+            sys.stdout.write("\033[1;36m" + f"\033[{i + 2};1H{line}" + "\033[0;0m")
     else:
         # Fallback si le fichier n'est pas trouvé
         sys.stdout.write("\033[10;30HZZZZZZ")

@@ -65,6 +65,7 @@ def check_exit(l, player, data):
     # Vérifier si la position contient la sortie (et si le joueur a la clé)
     return l['grille'][y][x] == 'S' and data['has_key']
 
+
 def check_secret_exit(l, player, data):
     """
     Vérifie si le joueur atteint la sortie secrete
@@ -77,6 +78,7 @@ def check_secret_exit(l, player, data):
 
     # Vérifier si la position contient la sortie secrête
     return l['grille'][y][x] == '+'
+
 
 def check_teleporter(l, player):
     """
