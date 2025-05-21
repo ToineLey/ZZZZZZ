@@ -47,12 +47,14 @@ def init():
     level2 = Level.create("niveau-02.txt", 0)
     level3 = Level.create("niveau-03.txt", 0)
     level4 = Level.create("niveau-04.txt", 0)
+    level_secret = Level.create("exemple-niveau-test.txt", 0)  # Ajout du niveau secret
 
     data['levels'].append(level0)
     data['levels'].append(level1)
     data['levels'].append(level2)
     data['levels'].append(level3)
     data['levels'].append(level4)
+    data['levels'].append(level_secret)  # Ajout du niveau secret à la liste
 
     # Extraire les positions initiales des éléments du niveau actuel
     current_level = data['levels'][data['level'] - 1]
@@ -140,6 +142,12 @@ def interact(data):
             # Afficher immédiatement après la tentative de ramassage
             with data['display_lock']:
                 show(data)
+        elif c == 's':  # Accès au niveau secret (nouvelle fonctionnalité)
+            if data['level'] < len(data['levels']):
+                data['level'] = len(data['levels']) - 1  # Aller au dernier niveau (niveau secret)
+                Level.change(data, True)
+            with data['display_lock']:
+                show(data)
 
 
 def live(data):
@@ -163,8 +171,9 @@ def live(data):
     # Vérifier les collisions entre le joueur et les ennemis
     for enemy in data['enemies']:
         if Enemy.test_player(enemy, data['player']):
-            game_over(data)
-            break
+            if enemy['state'] == 0:  # Ne tester que les ennemis actifs
+                game_over(data)
+                break
 
 
 def show(data):
@@ -193,7 +202,7 @@ def show(data):
     sys.stdout.write(
         f"\033[{data['y_max']}H\033[KVies: {data['lives']} | Niveau: {data['level']} | Score: {data['score']} | ")
     sys.stdout.write(
-        f"Clé: {'Oui' if data['has_key'] else 'Non'} | [q/d]: Déplacer | [z]: Gravité | [e]: Prendre clé | [a]: Quitter")
+        f"Clé: {'Oui' if data['has_key'] else 'Non'} | [q/d]: Déplacer | [z]: Gravité | [e]: Prendre clé | [s]: Niveau Secret | [a]: Quitter")
 
     sys.stdout.flush()
 
@@ -241,8 +250,16 @@ def win(data):
     """
     data['running'] = False
     sys.stdout.write("\033[H\033[2J")
-    sys.stdout.write("\033[10;30HVICTOIRE!\033[11;25HVotre score final: " + str(data['score']))
-    sys.stdout.write("\033[12;25HAppuyez sur une touche pour quitter...")
+
+    # Afficher le contenu du fichier Victoire.txt
+    try:
+        with open("Victoire.txt", 'r') as f:
+            victory_text = f.read()
+            sys.stdout.write("\033[5;5H" + victory_text)
+    except FileNotFoundError:
+        sys.stdout.write("\033[10;30HVICTOIRE!\033[11;25HVotre score final: " + str(data['score']))
+
+    sys.stdout.write("\033[20;25HAppuyez sur une touche pour quitter...")
     sys.stdout.flush()
     sys.stdin.read(1)
     quit_game(data)
@@ -313,11 +330,20 @@ def main():
     """
     # Écran de démarrage
     sys.stdout.write("\033[H\033[2J")
-    sys.stdout.write("\033[10;30HZZZZZZ\033[11;25HJeu de plateforme avec gravité inversée")
-    sys.stdout.write("\033[13;25H[q/d]: Déplacer | [z]: Gravité | [e]: Prendre clé | [a]: Quitter")
-    sys.stdout.write("\033[14;25H[E]: Ennemi rouge (actif en gravité normale)")
-    sys.stdout.write("\033[15;25H[F]: Ennemi jaune (actif en gravité inversée)")
-    sys.stdout.write("\033[17;25HAppuyez sur [Entrée] pour commencer...")
+
+    # Afficher le contenu de ZZZZZZ.txt comme écran d'accueil
+    try:
+        with open("ZZZZZZ.txt", 'r') as f:
+            intro_text = f.read()
+            sys.stdout.write("\033[1;1H" + intro_text)
+    except FileNotFoundError:
+        sys.stdout.write("\033[10;30HZZZZZZ\033[11;25HJeu de plateforme avec gravité inversée")
+        sys.stdout.write("\033[13;25H[q/d]: Déplacer | [z]: Gravité | [e]: Prendre clé | [a]: Quitter")
+        sys.stdout.write("\033[14;25H[E]: Ennemi rouge (actif en gravité normale)")
+        sys.stdout.write("\033[15;25H[F]: Ennemi jaune (actif en gravité inversée)")
+        sys.stdout.write("\033[16;25H[s]: Accéder au niveau secret")
+
+    sys.stdout.write("\033[20;25HAppuyez sur [Entrée] pour commencer...")
     sys.stdout.flush()
 
     # Attendre que l'utilisateur appuie sur Entrée

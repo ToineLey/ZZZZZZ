@@ -66,6 +66,84 @@ def check_exit(l, player, data):
     return l['grille'][y][x] == 'S' and data['has_key']
 
 
+def check_teleporter(l, player):
+    """
+    Vérifie si le joueur atteint un téléporteur
+    """
+    x, y = int(player['x']), int(player['y'])
+
+    # S'assurer que les coordonnées sont valides
+    if y < 0 or y >= len(l['grille']) or x < 0 or x >= len(l['grille'][y]):
+        return False
+
+    # Vérifier si la position contient un téléporteur
+    return l['grille'][y][x] == '+'
+
+
+def change_to_secret(data, current_level):
+    """
+    Change vers un niveau secret
+    """
+    import Player
+    import Key
+    import Enemy
+
+    # Sauvegarde le niveau courant pour pouvoir revenir au niveau suivant
+    data['prev_level'] = data['level']
+    data['has_key'] = False
+
+    # Charger le niveau secret correspondant au niveau courant
+    secret_level_name = f"niveau-secret-{data['level']:02d}.txt"
+
+    # Ajouter le niveau secret à la liste des niveaux si ce n'est pas déjà fait
+    secret_level = create(secret_level_name, 0)
+
+    # Remplacer temporairement le niveau actuel par le niveau secret
+    data['current_is_secret'] = True
+    data['secret_level'] = secret_level
+
+    player_pos = None
+    key_pos = None
+    enemy_positions = []
+    inverted_enemy_positions = []
+
+    if data['enemies'] != []:
+        data['enemies'].clear()
+
+    # Chercher les positions initiales dans le niveau secret
+    for y, line in enumerate(secret_level['grille']):
+        for x, char in enumerate(line):
+            if char == '@':
+                player_pos = (x, y)
+            elif char == 'K':
+                key_pos = (x, y)
+            elif char == 'E':
+                enemy_positions.append((x, y))
+            elif char == 'F':
+                inverted_enemy_positions.append((x, y))
+
+    # Créer le joueur à la position extraite du niveau
+    if player_pos:
+        data['player'] = Player.create(player_pos[0], player_pos[1])
+    else:
+        data['player'] = Player.create(5, 5)  # Position par défaut
+
+    # Créer la clé à la position extraite du niveau
+    if key_pos:
+        data['key'] = Key.create(key_pos[0], key_pos[1])
+    else:
+        data['key'] = Key.create(20, 20)  # Position par défaut
+
+    # Créer les ennemis aux positions extraites du niveau
+    if enemy_positions:
+        for pos in enemy_positions:
+            data['enemies'].append(Enemy.create(pos[0], pos[1], 1))
+
+    if inverted_enemy_positions:
+        for pos in inverted_enemy_positions:
+            data['enemies'].append(Enemy.create(pos[0], pos[1], 2))
+
+
 def change(data, next_level):
     """
     Change de niveau si le joueur atteint la sortie
@@ -75,7 +153,13 @@ def change(data, next_level):
     import Key
 
     if next_level:
-        data['level'] += 1
+        # Si on est dans un niveau secret, aller au niveau suivant celui qui a amené au secret
+        if data.get('current_is_secret', False):
+            data['level'] = data['prev_level'] + 1
+            data['current_is_secret'] = False
+        else:
+            data['level'] += 1
+
         data['has_key'] = False
         data['score'] += 500
 
@@ -135,6 +219,8 @@ def show(l):
                 sys.stdout.write("\033[36mS\033[0m")  # Sortie en cyan
             elif char == '=':
                 sys.stdout.write("\033[37m=\033[0m")  # Plateforme en gris
+            elif char == '+':
+                sys.stdout.write("\033[45m▓\033[0m")  # Téléporteur en magenta
             elif char == 'E' or char == 'F':
                 # Ne pas afficher les ennemis ici, ils sont gérés par Enemy.show()
                 sys.stdout.write(" ")

@@ -73,7 +73,6 @@ def pick_key(data):
     """
     Permet de ramasser la clé
     """
-    import Key
 
     p = data['player']
     k = data['key']
@@ -99,7 +98,6 @@ def collide(p, data):
     """
     Gère les collisions avec le niveau
     """
-    import Level
 
     level = data['levels'][data['level'] - 1]
 
@@ -132,12 +130,12 @@ def collide(p, data):
     if p.get('_last_x', None) is not None:
         # Calculer la direction du mouvement
         dx = p['x'] - p['_last_x']
-        
+
         if dx != 0:  # Si un mouvement horizontal a eu lieu
             if test_collision(p['x'], p['y'], level):
                 # En cas de collision, revenir à l'ancienne position
                 p['x'] = p['_last_x']
-    
+
     # Mémoriser la position actuelle pour le prochain cycle
     p['_last_x'] = p['x']
 
@@ -151,6 +149,7 @@ def collide(p, data):
     if p['y'] > data['y_max'] - 1:
         p['y'] = data['y_max'] - 1
 
+
 def test_collision(x, y, level):
     """
     Teste s'il y a une collision à la position donnée
@@ -163,6 +162,7 @@ def test_collision(x, y, level):
         return True
 
     cell = level['grille'][y_int][x_int]
+    # Note: '+' (téléporteur) ne bloque pas le mouvement, donc on ne le traite pas comme une collision
     return cell == '#' or cell == '='
 
 
