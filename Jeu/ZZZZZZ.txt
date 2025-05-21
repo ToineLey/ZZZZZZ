@@ -14,7 +14,3 @@ Z::::::ZZZZZZZZ:::ZZ::::::ZZZZZZZZ:::ZZ::::::ZZZZZZZZ:::ZZ::::::ZZZZZZZZ:::ZZ:::
 Z:::::::::::::::::ZZ:::::::::::::::::ZZ:::::::::::::::::ZZ:::::::::::::::::ZZ:::::::::::::::::ZZ:::::::::::::::::Z
 Z:::::::::::::::::ZZ:::::::::::::::::ZZ:::::::::::::::::ZZ:::::::::::::::::ZZ:::::::::::::::::ZZ:::::::::::::::::Z
 ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
-
-Jeu de plateforme avec gravité inversée
-
-[q/d]: Déplacer | [z]: Gravité | [e]: Prendre clé | [a]: Quitte

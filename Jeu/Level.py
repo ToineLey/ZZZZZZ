@@ -65,6 +65,18 @@ def check_exit(l, player, data):
     # Vérifier si la position contient la sortie (et si le joueur a la clé)
     return l['grille'][y][x] == 'S' and data['has_key']
 
+def check_secret_exit(l, player, data):
+    """
+    Vérifie si le joueur atteint la sortie secrete
+    """
+    x, y = int(player['x']), int(player['y'])
+
+    # S'assurer que les coordonnées sont valides
+    if y < 0 or y >= len(l['grille']) or x < 0 or x >= len(l['grille'][y]):
+        return False
+
+    # Vérifier si la position contient la sortie secrête
+    return l['grille'][y][x] == '+'
 
 def check_teleporter(l, player):
     """
@@ -95,7 +107,14 @@ def change_to_secret(data, current_level):
     # Charger le niveau secret correspondant au niveau courant
     secret_level_name = f"niveau-secret-{data['level']:02d}.txt"
 
-    # Ajouter le niveau secret à la liste des niveaux si ce n'est pas déjà fait
+    # Si le niveau secret n'existe pas, utiliser le fichier niveau-secret-01.txt
+    try:
+        with open(secret_level_name, 'r', encoding='utf-8') as f:
+            pass
+    except FileNotFoundError:
+        secret_level_name = "niveau-secret-01.txt"
+
+    # Créer le niveau secret
     secret_level = create(secret_level_name, 0)
 
     # Remplacer temporairement le niveau actuel par le niveau secret
@@ -142,6 +161,13 @@ def change_to_secret(data, current_level):
     if inverted_enemy_positions:
         for pos in inverted_enemy_positions:
             data['enemies'].append(Enemy.create(pos[0], pos[1], 2))
+
+    # Important: remplacer temporairement le niveau actuel dans la liste des niveaux
+    if data['level'] <= len(data['levels']):
+        # Sauvegarder le niveau actuel
+        data['saved_level'] = data['levels'][data['level'] - 1]
+        # Remplacer par le niveau secret
+        data['levels'][data['level'] - 1] = secret_level
 
 
 def change(data, next_level):
