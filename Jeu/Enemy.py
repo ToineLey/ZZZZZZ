@@ -75,7 +75,7 @@ def move(e, data):
                 # Vérifier s'il y a une collision ou un vide en dessous
                 if (new_x < 0 or new_x >= level['width'] or y_int >= level['height'] or
                         (y_int < level['height'] and y_int >= 0 and new_x < len(level['grille'][y_int]) and
-                         level['grille'][y_int][new_x] == '#')):
+                         level['grille'][y_int][new_x] == '#' or '+')):
                     # Changer de direction
                     e['direction'] *= -1
                 else:

@@ -48,12 +48,14 @@ def init():
     level2 = Level.create("niveau-02.txt", 0)
     level3 = Level.create("niveau-03.txt", 0)
     level4 = Level.create("niveau-04.txt", 0)
+    level5 = Level.create("niveau-05.txt", 0)
 
     data['levels'].append(level0)
     data['levels'].append(level1)
     data['levels'].append(level2)
     data['levels'].append(level3)
     data['levels'].append(level4)
+    data['levels'].append(level5)
 
     # Extraire les positions initiales des éléments du niveau actuel
     current_level = data['levels'][data['level'] - 1]
@@ -143,6 +145,12 @@ def interact(data):
             # Afficher immédiatement après la tentative de ramassage
             with data['display_lock']:
                 show(data)
+        elif c == 'n':  # Essayer de ramasser la clé
+            if data['level'] < len(data['levels']):
+                Level.change(data, True)
+            else:
+                win(data)
+
         elif c == 'r':  # Redémarrer le niveau actuel
             # Réinitialiser la position du joueur
             current_level = data['levels'][data['level'] - 1]
