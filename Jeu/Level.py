@@ -107,7 +107,7 @@ def change_to_secret(data, current_level):
     data['has_key'] = False
 
     # Charger le niveau secret correspondant au niveau courant
-    secret_level_name = f"niveau-secret-{data['level']:02d}.txt"
+    secret_level_name = f"niveau-secret-{data['level']-1:02d}.txt"
 
     # Si le niveau secret n'existe pas, utiliser le fichier niveau-secret-01.txt
     try:
@@ -185,6 +185,7 @@ def change(data, next_level):
         if data.get('current_is_secret', False):
             data['level'] = data['prev_level'] + 1
             data['current_is_secret'] = False
+            data['lives']+=5
         else:
             data['level'] += 1
 

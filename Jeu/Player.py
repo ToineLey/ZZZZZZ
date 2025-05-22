@@ -84,7 +84,7 @@ def pick_key(data):
     # Si le joueur est à proximité de la clé
     if abs(px - kx) <= 1 and abs(py - ky) <= 1 and not data['has_key']:
         data['has_key'] = True
-        data['score'] += 100
+        data['score'] += 100 * (data['lives']/5)
 
 
 def set_speed(p, v):

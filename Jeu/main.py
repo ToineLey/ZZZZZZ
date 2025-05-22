@@ -13,7 +13,7 @@ import Player
 import Level
 import Enemy
 import Key
-import Score  # Nouveau module pour la gestion des scores
+import Score
 
 ''
 
@@ -41,7 +41,7 @@ def init():
         'has_key': False,
         'old_settings': None,
         'display_lock': threading.Lock(),  # Verrou pour synchroniser l'affichage
-        'victory': False  # Nouveau: indicateur de victoire
+        'victory': False  # indicateur de victoire
     }
 
     # Charger les niveaux
@@ -55,7 +55,6 @@ def init():
     level7 = Level.create("niveau-07.txt", 0)
     level8 = Level.create("niveau-08.txt", 0)
     level9 = Level.create("niveau-09.txt", 0)
-    level10 = Level.create("niveau-10.txt", 0)
 
     data['levels'].append(level0)
     data['levels'].append(level1)
@@ -67,7 +66,6 @@ def init():
     data['levels'].append(level7)
     data['levels'].append(level8)
     data['levels'].append(level9)
-    data['levels'].append(level10)
 
     # Extraire les positions initiales des éléments du niveau actuel
     current_level = data['levels'][data['level'] - 1]
@@ -150,6 +148,7 @@ def interact(data):
         elif c == 'z' or c == ' ':  # Changer la gravité
             Player.gravity_change(data['player'])
             # Afficher immédiatement après le changement de gravité
+            data['score'] -= 1
             with data['display_lock']:
                 show(data)
         elif c == 'e':  # Essayer de ramasser la clé
@@ -247,7 +246,7 @@ def show(data):
     # Afficher les informations du jeu
     sys.stdout.write(f"\033[{data['y_max']}H\033[K")
     sys.stdout.write(
-        f"\033[{data['y_max']}H\033[KVies: {data['lives']} | Niveau: {data['level']} | Score: {data['score']} | ")
+        f"\033[{data['y_max']}H\033[KVies: {data['lives']} | Niveau: {data['level']} | Score: {int(data['score'])} | ")
     sys.stdout.write(
         f"Clé: {'Oui' if data['has_key'] else 'Non'} | [q/d]: Déplacer | [z]: Gravité | [e]: Prendre clé | [r]: Restart | [Echap]: Quitter")
 
@@ -334,7 +333,7 @@ def win(data):
     """
     data['running'] = False
     data['victory'] = True  # Victoire
-    data['score'] += 5000  # Bonus de victoire
+    data['score'] += int(5000 * (data['lives']/5) + 50) # Bonus de victoire et pénalité de mort + score du niveau actuel
 
     # Nettoyer l'écran
     sys.stdout.write("\033[H\033[2J")
@@ -464,13 +463,13 @@ def show_main_menu():
         sys.stdout.write("\033[10;30HZZZZZZ")
 
     # Afficher les instructions
-    sys.stdout.write("\033[18;25H\033[1;33m══════════════════════════════════════════\033[0m")
-    sys.stdout.write("\033[19;25H\033[1;33m                INSTRUCTIONS              \033[0m")
-    sys.stdout.write("\033[20;25H\033[1;33m══════════════════════════════════════════\033[0m")
-    sys.stdout.write("\033[21;25H[S]: Sortie | [?/¿]: Joueur | [K]: clé")
-    sys.stdout.write("\033[22;25H[E]: Ennemi rouge (actif en gravité normale)")
-    sys.stdout.write("\033[23;25H[F]: Ennemi jaune (actif en gravité inversée)")
-    sys.stdout.write("\033[25;25H\033[1;32m[Entrée]: Jouer | [h]: Scores | [Echap]: Quitter\033[0m")
+    sys.stdout.write("\033[19;25H\033[1;33m╔════════════════════════════════════════╗\033[0m")
+    sys.stdout.write("\033[20;25H\033[1;33m║               INSTRUCTIONS             ║\033[0m")
+    sys.stdout.write("\033[21;25H\033[1;33m╚════════════════════════════════════════╝\033[0m")
+    sys.stdout.write("\033[23;25H[S]: Sortie | [?/¿]: Joueur | [K]: clé")
+    sys.stdout.write("\033[24;25H[E]: Ennemi rouge (actif en gravité normale)")
+    sys.stdout.write("\033[25;25H[F]: Ennemi jaune (actif en gravité inversée)")
+    sys.stdout.write("\033[27;25H\033[1;32m[Entrée]: Jouer | [h]: Scores | [Echap]: Quitter\033[0m")
     sys.stdout.flush()
 
 
