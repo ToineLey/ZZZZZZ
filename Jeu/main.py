@@ -13,6 +13,7 @@ import Player
 import Level
 import Enemy
 import Key
+import Score  # Nouveau module pour la gestion des scores
 
 ''
 
@@ -39,7 +40,8 @@ def init():
         'running': True,
         'has_key': False,
         'old_settings': None,
-        'display_lock': threading.Lock()  # Verrou pour synchroniser l'affichage
+        'display_lock': threading.Lock(),  # Verrou pour synchroniser l'affichage
+        'victory': False  # Nouveau: indicateur de victoire
     }
 
     # Charger les niveaux
@@ -155,7 +157,7 @@ def interact(data):
             # Afficher immédiatement après la tentative de ramassage
             with data['display_lock']:
                 show(data)
-        elif c == 'n':  # Essayer de ramasser la clé
+        elif c == 'n':  # Niveau suivant (debug)
             if data['level'] < len(data['levels']):
                 Level.change(data, True)
             else:
@@ -261,12 +263,13 @@ def game_over(data):
 
     if data['lives'] <= 0:
         data['running'] = False
+        data['victory'] = False  # Défaite
+
         # Nettoyer l'écran
         sys.stdout.write("\033[H\033[2J")
         sys.stdout.flush()
 
         # Déterminer le chemin du fichier fin.txt
-        # Essayer plusieurs chemins possibles
         file_paths = ["./fin.txt", "fin.txt", os.path.join(os.path.dirname(__file__), "fin.txt")]
         end_text = None
 
@@ -280,29 +283,28 @@ def game_over(data):
 
         # Afficher le texte de fin
         if end_text:
-            # Afficher ligne par ligne pour éviter les problèmes d'affichage
             lines = end_text.split('\n')
             for i, line in enumerate(lines):
-                sys.stdout.write("\033[1;31m" + f"\033[{i + 5};1H{line}" + "\033[0;0m")
+                sys.stdout.write("\033[1;31m" + f"\033[{i + 2};1H{line}" + "\033[0;0m")
         else:
-            # Fallback si le fichier n'est pas trouvé
             sys.stdout.write("\033[10;30H\033[31mGAME OVER\033[0m")
 
-        sys.stdout.write("\033[25;25H[r]: Recommencer | [Echap]: Quitter")
-        sys.stdout.write("\033[26;25HVotre score final: " + str(data['score']))
         sys.stdout.flush()
 
-        # Attendre une touche
-        while True:
-            key = sys.stdin.read(1)
-            if key == 'r':  # Recommencer le jeu
-                # Restaurer les paramètres du terminal
-                termios.tcsetattr(sys.stdin, termios.TCSADRAIN, data['old_settings'])
-                # Réinitialiser et relancer le jeu
-                python = sys.executable
-                os.execl(python, python, *sys.argv)
-            elif key == '\x1b':  # Touche Échap
-                quit_game(data)
+        # Petite pause pour laisser voir le message
+        time.sleep(1)
+
+        # Gérer l'enregistrement du score
+        action = Score.handle_score_entry(data)
+
+        if action == 'restart':
+            # Restaurer les paramètres du terminal
+            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, data['old_settings'])
+            # Réinitialiser et relancer le jeu
+            python = sys.executable
+            os.execl(python, python, *sys.argv)
+        elif action == 'quit':
+            quit_game(data)
     else:
         # Réinitialiser la position du joueur
         current_level = data['levels'][data['level'] - 1]
@@ -331,12 +333,14 @@ def win(data):
     Termine la partie si le joueur gagne
     """
     data['running'] = False
+    data['victory'] = True  # Victoire
+    data['score'] += 5000  # Bonus de victoire
+
     # Nettoyer l'écran
     sys.stdout.write("\033[H\033[2J")
     sys.stdout.flush()
 
     # Déterminer le chemin du fichier Victoire.txt
-    # Essayer plusieurs chemins possibles
     file_paths = ["./Victoire.txt", "Victoire.txt", os.path.join(os.path.dirname(__file__), "Victoire.txt")]
     victory_text = None
 
@@ -350,29 +354,28 @@ def win(data):
 
     # Afficher le texte de victoire
     if victory_text:
-        # Afficher ligne par ligne pour éviter les problèmes d'affichage
         lines = victory_text.split('\n')
         for i, line in enumerate(lines):
-            sys.stdout.write("\033[1;32m" + f"\033[{i + 5};1H{line}" + "\033[0;0m")
+            sys.stdout.write("\033[1;32m" + f"\033[{i + 2};1H{line}" + "\033[0;0m")
     else:
-        # Fallback si le fichier n'est pas trouvé
         sys.stdout.write("\033[1;32m" + "\033[10;30H\033[32mVICTOIRE!\033[0m" + "\033[0;0m")
 
-    sys.stdout.write("\033[28;25H[r]: Recommencer | [Echap]: Quitter")
-    sys.stdout.write("\033[29;25HVotre score final: " + str(data['score']))
     sys.stdout.flush()
 
-    # Attendre une touche
-    while True:
-        key = sys.stdin.read(1)
-        if key == 'r':  # Recommencer le jeu
-            # Restaurer les paramètres du terminal
-            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, data['old_settings'])
-            # Réinitialiser et relancer le jeu
-            python = sys.executable
-            os.execl(python, python, *sys.argv)
-        elif key == '\x1b':  # Touche Échap
-            quit_game(data)
+    # Petite pause pour laisser voir le message
+    time.sleep(1)
+
+    # Gérer l'enregistrement du score
+    action = Score.handle_score_entry(data)
+
+    if action == 'restart':
+        # Restaurer les paramètres du terminal
+        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, data['old_settings'])
+        # Réinitialiser et relancer le jeu
+        python = sys.executable
+        os.execl(python, python, *sys.argv)
+    elif action == 'quit':
+        quit_game(data)
 
 
 def quit_game(data):
@@ -434,15 +437,13 @@ def run(data):
         time.sleep(0.01)
 
 
-def main():
+def show_main_menu():
     """
-    Fonction principale du jeu
+    Affiche le menu principal avec les options
     """
-    # Écran de démarrage
     sys.stdout.write("\033[H\033[2J")
 
     # Déterminer le chemin du fichier ZZZZZZ.txt
-    # Essayer plusieurs chemins possibles
     file_paths = ["./ZZZZZZ.txt", "ZZZZZZ.txt", os.path.join(os.path.dirname(__file__), "ZZZZZZ.txt")]
     intro_text = None
 
@@ -456,42 +457,66 @@ def main():
 
     # Afficher le texte d'intro
     if intro_text:
-        # Afficher ligne par ligne pour éviter les problèmes d'affichage
         lines = intro_text.split('\n')
         for i, line in enumerate(lines):
             sys.stdout.write("\033[1;36m" + f"\033[{i + 2};1H{line}" + "\033[0;0m")
     else:
-        # Fallback si le fichier n'est pas trouvé
         sys.stdout.write("\033[10;30HZZZZZZ")
 
-    sys.stdout.write("\033[20;25H[S]: Sortie | [?/¿]: Joueur | [K]: clé")
+    # Afficher les instructions
+    sys.stdout.write("\033[18;25H\033[1;33m══════════════════════════════════════════\033[0m")
+    sys.stdout.write("\033[19;25H\033[1;33m                INSTRUCTIONS              \033[0m")
+    sys.stdout.write("\033[20;25H\033[1;33m══════════════════════════════════════════\033[0m")
+    sys.stdout.write("\033[21;25H[S]: Sortie | [?/¿]: Joueur | [K]: clé")
     sys.stdout.write("\033[22;25H[E]: Ennemi rouge (actif en gravité normale)")
-    sys.stdout.write("\033[24;25H[F]: Ennemi jaune (actif en gravité inversée)")
-    sys.stdout.write("\033[29;25HAppuyez sur Entrée pour commencer ou [Echap] pour quitter...")
+    sys.stdout.write("\033[23;25H[F]: Ennemi jaune (actif en gravité inversée)")
+    sys.stdout.write("\033[25;25H\033[1;32m[Entrée]: Jouer | [h]: Scores | [Echap]: Quitter\033[0m")
     sys.stdout.flush()
 
-    # Configuration du terminal pour la détection des touches sans appuyer sur Entrée
+
+def main():
+    """
+    Fonction principale du jeu
+    """
+    # Configuration du terminal pour la détection des touches
     old_settings = termios.tcgetattr(sys.stdin)
     tty.setraw(sys.stdin.fileno())
 
-    # Attendre que l'utilisateur appuie sur Entrée ou Échap
-    while True:
-        key = sys.stdin.read(1)
-        if key == '\r':  # Entrée
-            break
-        elif key == '\x1b':  # Échap
-            # Restaurer les paramètres du terminal
-            termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
-            sys.stdout.write("\033[?25h")  # Afficher le curseur
-            sys.stdout.write("\033[H\033[2J")  # Effacer l'écran
-            sys.stdout.flush()
-            sys.exit(0)
+    try:
+        while True:
+            show_main_menu()
 
-    # Initialiser le jeu (cela réinitialise les paramètres du terminal)
-    data = init()
+            # Attendre une action de l'utilisateur
+            while True:
+                key = sys.stdin.read(1)
+                if key == '\r':  # Entrée - Jouer
+                    # Initialiser et lancer le jeu
+                    data = init()
+                    run(data)
+                    break  # Sortir de la boucle pour revenir au menu principal
 
-    # Lancer la boucle de simulation
-    run(data)
+                elif key == 'h':  # Afficher les scores
+                    sys.stdout.write("\033[H\033[2J")
+                    Score.display_scores()
+                    sys.stdout.write("\033[30;25H\033[1;33mAppuyez sur une touche pour revenir au menu...\033[0m")
+                    sys.stdout.flush()
+                    sys.stdin.read(1)  # Attendre une touche
+                    break  # Revenir au menu principal
+
+                elif key == '\x1b':  # Échap - Quitter
+                    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+                    sys.stdout.write("\033[?25h")  # Afficher le curseur
+                    sys.stdout.write("\033[H\033[2J")  # Effacer l'écran
+                    sys.stdout.flush()
+                    sys.exit(0)
+
+    except KeyboardInterrupt:
+        # En cas d'interruption, restaurer le terminal
+        termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+        sys.stdout.write("\033[?25h")
+        sys.stdout.write("\033[H\033[2J")
+        sys.stdout.flush()
+        sys.exit(0)
 
 
 if __name__ == "__main__":
