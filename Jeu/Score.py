@@ -46,7 +46,7 @@ def add_score(player_name, score, level_reached, victory=False):
 
     new_score = {
         "name": player_name,
-        "score": score,
+        "score": int(score),
         "level": level_reached,
         "victory": victory,
         "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
