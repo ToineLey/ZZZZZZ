@@ -14,10 +14,4 @@ Ce repository servira à recueillir les donnés du projet de S2P de l'ENIB
 
 ## Tâches actuelles
 
-- ajouter une meilleur gestion du score (multiplicateur en fonction des vies, soustracteur en fonction du nombre de changement de gravité)
-
 - ajouter plus de niveau bonus avec leurs spécificités
-
-- ajouter un tableau des scores (en json pour que cela soit plus simple)
-
-- ajouter la possibilité de s'enregister dans le tableau des scores
