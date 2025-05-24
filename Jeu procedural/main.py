@@ -156,11 +156,6 @@ def interact(data):
             # Afficher immédiatement après la tentative de ramassage
             with data['display_lock']:
                 show(data)
-        elif c == 'n':  # Niveau suivant (debug)
-            if data['level'] < len(data['levels']):
-                Level.change(data, True)
-            else:
-                win(data)
 
         elif c == 'r':  # Redémarrer le niveau actuel
             # Réinitialiser la position du joueur
